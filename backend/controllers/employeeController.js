@@ -14,24 +14,28 @@ const calculateAge = (dob) => {
 const EmployeeController = {
   async createEmployee(req, res) {
     try {
-        // Check if file was uploaded
-        if (!req.file) {
-          return res.status(400).json({ error: 'No image file provided' });
-        }
     
         const { name, email, date_of_birth, address } = req.body;
         
-        // Basic validation
-        if (!name || !email) {
-          // Clean up the uploaded file if validation fails
-          if (req.file) {
-            fs.unlinkSync(req.file.path);
-          }
-          return res.status(400).json({ error: 'Name and email are required' });
-        }
+    // Basic validation
+    if (!name || !email) {
+        // Clean up uploaded file if validation fails
+        if (req.file) fs.unlinkSync(req.file.path);
+        return res.status(400).json({ error: 'Name and email are required' });
+      }
+  
+      // Check if email already exists
+      const existingEmployee = await Employee.findByEmail(email);
+      if (existingEmployee) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        return res.status(400).json({ error: 'Email already exists' });
+      }
     
         // Process the image path
-        const imagePath = '/public/uploads/' + req.file.filename;
+        let imagePath = null;
+        if (req.file) {
+            imagePath = '/public/uploads/' + req.file.filename
+        }
     
         // Create employee record
         const newEmployee = await Employee.create({
